@@ -1,8 +1,8 @@
 # literal
 
-Source code for [doedja.com](https://doedja.com) - my personal blog.
+A minimal Astro blog. Mataroa simplicity, yours to customize.
 
-Built with Astro. Inspired by [mataroa.blog](https://mataroa.blog)'s clean, no-nonsense approach.
+Source for [doedja.com](https://doedja.com). Inspired by [mataroa.blog](https://mataroa.blog).
 
 ## Use as a template
 
@@ -63,18 +63,15 @@ Edit files in `src/content/pages/`:
 
 ## Deploy
 
-1. Connect GitHub repo to Cloudflare Pages
-2. Set build command: `bun run build`
-3. Set output directory: `dist`
-4. (Optional) Add environment variables for analytics:
-   - `UMAMI_WEBSITE_ID`: your Umami website ID
-   - `UMAMI_SRC`: your Umami script URL
+Connect your repo to Cloudflare Pages with:
+- Build command: `bun run build`
+- Output directory: `dist`
 
-Then just:
+Then just push to GitHub - Cloudflare auto-deploys.
 
-```bash
-bun run deploy
-```
+Set environment variables in Cloudflare dashboard for analytics:
+- `UMAMI_WEBSITE_ID`: your Umami website ID
+- `UMAMI_SRC`: your Umami script URL
 
 ## License
 
