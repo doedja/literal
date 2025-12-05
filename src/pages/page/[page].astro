@@ -1,0 +1,72 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+import { formatDate, getSlug } from '../../utils';
+
+export async function getStaticPaths() {
+  const POSTS_PER_PAGE = 10;
+  const posts = await getCollection('posts', ({ data }) => !data.draft);
+  const totalPages = Math.ceil(posts.length / POSTS_PER_PAGE);
+
+  // Generate pages 2, 3, 4... (page 1 is index.astro)
+  return Array.from({ length: totalPages - 1 }, (_, i) => ({
+    params: { page: String(i + 2) },
+  }));
+}
+
+const POSTS_PER_PAGE = 10;
+const { page } = Astro.params;
+const currentPage = parseInt(page);
+
+const posts = await getCollection('posts', ({ data }) => !data.draft);
+const sortedPosts = posts.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+
+const totalPages = Math.ceil(sortedPosts.length / POSTS_PER_PAGE);
+const start = (currentPage - 1) * POSTS_PER_PAGE;
+const paginatedPosts = sortedPosts.slice(start, start + POSTS_PER_PAGE);
+
+const prevPage = currentPage > 2 ? `/page/${currentPage - 1}` : '/';
+const nextPage = currentPage < totalPages ? `/page/${currentPage + 1}` : null;
+---
+
+<Base title={`Page ${currentPage}`}>
+  <h1>Recent</h1>
+  <ul class="post-list">
+    {paginatedPosts.map((post) => (
+      <li>
+        <a href={`/${getSlug(post.slug)}`}>{post.data.title}</a>
+        <time datetime={post.data.date.toISOString()}>{formatDate(post.data.date)}</time>
+      </li>
+    ))}
+  </ul>
+
+  <nav class="pagination">
+    <a href={prevPage}>&larr; Prev</a>
+
+    <span class="pages">
+      {currentPage > 2 && <a href="/">1</a>}
+      {currentPage > 3 && <span>...</span>}
+      {currentPage > 1 && <a href={prevPage}>{currentPage - 1}</a>}
+      <span class="current">{currentPage}</span>
+      {nextPage && <a href={nextPage}>{currentPage + 1}</a>}
+      {currentPage < totalPages - 2 && <span>...</span>}
+      {currentPage < totalPages - 1 && <a href={`/page/${totalPages}`}>{totalPages}</a>}
+    </span>
+
+    {nextPage ? (
+      <a href={nextPage}>Next &rarr;</a>
+    ) : (
+      <span></span>
+    )}
+  </nav>
+</Base>
+
+<style>
+  h1 {
+    margin-bottom: 2.5rem;
+  }
+
+  .pagination {
+    justify-content: space-between;
+  }
+</style>
