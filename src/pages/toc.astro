@@ -87,4 +87,12 @@ const categories = [...grouped.entries()]
     font-size: 0.875rem;
     white-space: nowrap;
   }
+
+  @media (max-width: 640px) {
+    li {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.25rem;
+    }
+  }
 </style>
