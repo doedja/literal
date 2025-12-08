@@ -3,7 +3,7 @@ title: "Building JFinder: Because Downloading Papers One by One Sucks"
 date: 2025-01-31
 ---
 
-**Update:** I'm currently upgrading JFinder to the next version! If you want to use the old version, you can still access it at **[jfinder-old.doedja.com](https://jfinder-old.doedja.com)**.
+**Update (December 2025):** JFinder v2 is here! Check out [what's new](#whats-new-in-v2) below.
 
 ---
 
@@ -36,3 +36,21 @@ If you want to try it, it's up at **[jfinder.doedja.com](https://jfinder.doedja.
 
 **Just a heads up:**
 *this is an educational tool. Use it responsibly.*
+
+---
+
+## What's New in v2
+
+So I finally got around to upgrading JFinder. Here's what changed:
+
+**Multiple download sources** — Instead of just hoping one source works, it now tries Unpaywall, Sci-Hub, LibGen, and Anna's Archive all in parallel. Way faster, way more reliable.
+
+**OpenAlex instead of Scopus** — Scopus required an API key which was annoying to get. OpenAlex is free and doesn't need authentication. You can still use Scopus if you have a key, but it's optional now.
+
+**DOI bulk upload** — Got a list of DOIs already? Just dump them in and let it download everything. No need to search.
+
+**Gap Analysis mode** — This one's new and kinda experimental. It looks at the papers you've found and tries to figure out what's *missing*. What research hasn't been done yet? What are the unexplored areas? It gives you a report with potential research directions. Honestly, I'm still not 100% sure how useful this is, but it's kinda cool.
+
+**Tech-wise** — Rebuilt the whole thing with Astro, TypeScript, and Bun. Uses OpenRouter for the LLM stuff so I can swap models whenever. The code's also on [GitHub](https://github.com/doedja/jfinder) now if you wanna run it yourself.
+
+Still got limitations though. Some papers won't download (paywalls gonna paywall), and the AI still gets creative with its searches sometimes. But it's way better than v1.
