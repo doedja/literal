@@ -43,4 +43,4 @@ I plan to make time for regular running at least once a week too, but I still fr
 
 ---
 
-Those lifestyle changes make me feel more energized, healthier, and better overall. I still struggle with it and a lot of other things, but I hope to get better day by day, or at least not get worse than today, haha.
+Those changes make me feel better overall. I still struggle with it and a lot of other things, but I hope to get better day by day, or at least not get worse than today, haha.

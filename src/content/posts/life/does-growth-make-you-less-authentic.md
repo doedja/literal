@@ -9,12 +9,12 @@ This really made me stop and think afterward.
 
 For the longest time, I thought being authentic meant sticking to your views no matter what. But now, I see that's not entirely true. People grow, and our perspectives naturally evolve as we experience more of life. Isn't it normal, and even necessary, to change your mind or view when you learn something new?
 
-Let me give you a simple example. Years ago, I might have said I preferred laptops for everything. Today, I'd say it depends on the situation. Am I being less authentic because my answer has changed? Of course not. I've just developed a broader understanding. Updating your views doesn't mean you're being fake or dishonest. It just means you're growing.
+Here's a dumb example. Years ago, I might have said I preferred laptops for everything. Today, I'd say it depends on the situation. Am I being less authentic because my answer has changed? Of course not. I've just developed a broader understanding. Updating your views doesn't mean you're being fake or dishonest. It just means you're growing.
 
-Authenticity isn't about clinging to old beliefs out of fear of looking inconsistent. It's about being true to who you are right now. Refusing to adapt just to stay "consistent" feels more inauthentic to me. After all, aren't we lying to ourselves if we ignore new experiences or insights just to keep up appearances?
+I don't think authenticity means clinging to old beliefs just to look consistent. It's more about being true to who you are right now. Refusing to adapt just to stay "consistent" feels more inauthentic to me. After all, aren't we lying to ourselves if we ignore new experiences or insights just to keep up appearances?
 
-Changing your mind isn't a sign of weakness or dishonesty. It's a sign of courage. It takes strength to admit when you've outgrown your old perspectives and to embrace a new way of thinking.
+Changing your mind isn't weakness. If anything, it takes guts to admit you've outgrown your old thinking and embrace a new way of seeing things.
 
-So, I say no! Growth doesn't make you less authentic. It makes you more real, more honest, and more human. And if someone calls you out for changing, maybe they're just uncomfortable with the idea that growth is part of life.
+So, I say no! Growth doesn't make you less authentic. If anything, it makes you more real. And if someone calls you out for changing, maybe they're just uncomfortable with the idea that growth is part of life.
 
-Being authentic isn't about staying the same, period. It's about evolving while staying true to who you are in the moment.
+Being authentic isn't about staying the same. It's about staying true to who you are right now, even if that's different from who you were before.

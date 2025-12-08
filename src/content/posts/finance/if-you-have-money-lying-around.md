@@ -20,4 +20,4 @@ While you're at it, if you're still curious, you can learn more about investing.
 
 That's all.
 
-This advice isn't a one-size-fits-all solution, but I believe it's a solid starting point for most people.
+Obviously this isn't for everyone, but it's a decent starting point.

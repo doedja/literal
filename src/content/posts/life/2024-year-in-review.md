@@ -61,4 +61,4 @@ AI development in coding assistants has been exponential this year. I picked up 
 
 Next year, I want to experiment more, embrace failure as part of the process, and see where it takes me. It's not just about achieving big things. It's about iterating, growing, and enjoying the journey.
 
-Here's to doing better in 2025.
+Hopefully 2025 goes better.

@@ -19,4 +19,4 @@ I often take it for granted, forgetting that the life I'm living now is the life
 
 So, if you have this freedom, be grateful and use it. Embrace it fully. Take the risks while you still can. After all, life isn't just about where you end up—it's also about recognizing and cherishing the moments where you're free to decide the journey.
 
-For those who are still on their journey, remember that every step, no matter how small, brings you closer to the freedom you're working toward. Keep going—you're building the life you'll one day look back on with pride.
+If you're not there yet, that's fine. I wasn't either. Just keep going.
