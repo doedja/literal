@@ -3,6 +3,10 @@ title: "Building JFinder: Because Downloading Papers One by One Sucks"
 date: 2025-01-31
 ---
 
+**Update:** I'm currently upgrading JFinder to the next version! If you want to use the old version, you can still access it at **[jfinder-old.doedja.com](https://jfinder-old.doedja.com)**.
+
+---
+
 You know what's really annoying? Trying to download research papers. You search for your topic, open a billion tabs, and then spend hours clicking "download" on each one. And half the time, the papers aren't even what you needed!
 
 I got fed up with this whole process and thought, "There's gotta be a better way."
@@ -27,10 +31,6 @@ It's far from perfect, I know. Look, this is just a **proof of concept**. It's b
 But you know what? **It works.** It's not perfect, but it's better than opening 50 tabs and clicking download manually. You might say, *"But we should read the abstract too!"* STFU, I just want to get my PDFs and read them later.
 
 If you want to try it, it's up at **[jfinder.doedja.com](https://jfinder.doedja.com)**. Just type in what you're researching and see what happens. No signup, no nonsense. If it helps, great! If it doesn't, well, at least we tried something new.
-
----
-
-**Update:** I'm currently upgrading JFinder to the next version! If you want to use the old version, you can still access it at **[jfinder-old.doedja.com](https://jfinder-old.doedja.com)**.
 
 ---
 
