@@ -30,5 +30,9 @@ If you want to try it, it's up at **[jfinder.doedja.com](https://jfinder.doedja.
 
 ---
 
+**Update:** I'm currently upgrading JFinder to the next version! If you want to use the old version, you can still access it at **[jfinder-old.doedja.com](https://jfinder-old.doedja.com)**.
+
+---
+
 **Just a heads up:**
 *this is an educational tool. Use it responsibly.*
