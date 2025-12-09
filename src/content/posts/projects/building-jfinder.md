@@ -52,6 +52,6 @@ So I finally got around to upgrading JFinder. Here's what changed:
 
 **Gap Analysis mode** — This one's new and kinda experimental. It looks at the papers you've found and tries to figure out what's *missing*. What research hasn't been done yet? What are the unexplored areas? It gives you a report with potential research directions. Honestly, I'm still not 100% sure how useful this is, but it's kinda cool.
 
-**Tech-wise** — Rebuilt the whole thing with Astro, TypeScript, and Bun. Uses OpenRouter for the LLM stuff so I can swap models whenever. The code's also on [GitHub](https://github.com/doedja/jfinder) now if you wanna run it yourself.
+**Tech-wise** — Rebuilt the whole thing with Astro, TypeScript, and Bun. Uses OpenRouter for the LLM stuff so I can swap models whenever (currently running **Qwen 2.5 72B Instruct**). The code's also on [GitHub](https://github.com/doedja/jfinder) now if you wanna run it yourself.
 
 Still got limitations though. Some papers won't download (paywalls gonna paywall), and the AI still gets creative with its searches sometimes. But it's way better than v1.
