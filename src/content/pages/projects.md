@@ -8,5 +8,5 @@ title: "Projects"
 - **[Ejaan](https://ejaan.doedja.com)** — Fast and accurate Indonesian spelling checker based on KBBI.
 - **[Aegisubs Automation Scripts](https://github.com/doedja/aegisub-scripts)** — Lua scripts for Aegisub to help with subtitle editing.
 - **Noure** — A platform enabling users to create customized payment profiles for easy sharing.
-- **Yukimedia** — A landing page developed for Yukimedia Indonesia.
+- **[Yukimedia](https://yukimedia.moe)** — A landing page developed for Yukimedia Indonesia.
 - **[JFinder](https://jfinder.doedja.com)** — AI-powered research paper finder and downloader with gap analysis.
