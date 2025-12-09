@@ -34,7 +34,7 @@ const nextPage = currentPage < totalPages ? `/page/${currentPage + 1}` : null;
   <ul class="post-list">
     {paginatedPosts.map((post) => (
       <li>
-        <a href={`/${getSlug(post.slug)}`}>{post.data.title}</a>
+        <a href={`/${getSlug(post.slug)}`}>{post.data.title}</a>{post.data.updated && <sup class="updated">(updated)</sup>}
         <time datetime={post.data.date.toISOString()}>{formatDate(post.data.date)}</time>
       </li>
     ))}
@@ -68,5 +68,12 @@ const nextPage = currentPage < totalPages ? `/page/${currentPage + 1}` : null;
 
   .pagination {
     justify-content: space-between;
+  }
+
+  .updated {
+    font-size: 0.65rem;
+    color: var(--muted);
+    margin-left: 0.25rem;
+    vertical-align: super;
   }
 </style>

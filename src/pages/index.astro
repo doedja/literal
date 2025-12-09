@@ -20,7 +20,7 @@ const paginatedPosts = sortedPosts.slice(0, POSTS_PER_PAGE);
     <ul class="post-list">
       {paginatedPosts.map((post) => (
         <li>
-          <a href={`/${getSlug(post.slug)}`}>{post.data.title}</a>
+          <a href={`/${getSlug(post.slug)}`}>{post.data.title}</a>{post.data.updated && <sup class="updated">(updated)</sup>}
           <time datetime={post.data.date.toISOString()}>{formatDate(post.data.date)}</time>
         </li>
       ))}
@@ -40,5 +40,12 @@ const paginatedPosts = sortedPosts.slice(0, POSTS_PER_PAGE);
 <style>
   h1 {
     margin-bottom: 2.5rem;
+  }
+
+  .updated {
+    font-size: 0.65rem;
+    color: var(--muted);
+    margin-left: 0.25rem;
+    vertical-align: super;
   }
 </style>

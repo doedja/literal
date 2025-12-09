@@ -1,6 +1,7 @@
 ---
 title: "Building JFinder: Because Downloading Papers One by One Sucks"
 date: 2025-01-31
+updated: 2025-12-09
 ---
 
 **Update (December 2025):** JFinder v2 is here! Check out [what's new](#whats-new-in-v2) below.
