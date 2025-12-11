@@ -1,5 +1,5 @@
 ---
-title: "Researchs"
+title: "Research"
 ---
 
 TBA soon.
