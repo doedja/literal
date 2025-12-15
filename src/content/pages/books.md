@@ -9,13 +9,13 @@ title: "Books"
 - **Thinking in Bets** by Annie Duke
 - **Skin in the Game** by Nassim Nicholas Taleb
 - **Tanyalah Aku Sebelum Kau Kehilangan Aku** by Fadhullah Al-Ha'iri
-- **Finish** by Jon Acuff
 - **Why Greatness Cannot Be Planned** by Kenneth O. Stanley & Joel Lehman
 - **The Art of Doing Science and Engineering** by Richard Hamming
 - **Zero to One** by Peter Thiel
 
 ## Finished
 
+- **Finish** by Jon Acuff
 - **Atomic Habits** by James Clear
 - **The Courage to Be Happy** by Ichiro Kishimi & Fumitake Koga
 - **The Courage to Be Disliked** by Ichiro Kishimi & Fumitake Koga
