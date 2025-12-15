@@ -11,3 +11,4 @@ title: "Projects"
 - **Noure** — A platform enabling users to create customized payment profiles for easy sharing.
 - **[Yukimedia](https://yukimedia.moe)** — A landing page developed for Yukimedia Indonesia.
 - **[JFinder](https://jfinder.doedja.com)** — AI-powered research paper finder and downloader with gap analysis.
+- **[Forja](https://forja.id)** — A product studio that builds practical, useful software.
