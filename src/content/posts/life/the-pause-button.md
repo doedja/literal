@@ -15,13 +15,13 @@ It's hard to explain, but it's like watching myself from above. Like a bird's ey
 
 Most of the time, the answer is: yeah, lizard brain being dramatic.
 
-Real example: I've been catching feelings for someone lately. And it's... a lot. Like, second puberty type of shit. The brain fog, the constant thinking about them, the whole package. If this happened to me five years ago, I would've been a complete disaster. Double texting at midnight. Reading too much into every reply. Making it weird. You know, classic 17-year-old boy energy.
+Real example: I've been catching feelings for someone lately. And it's... a lot. Like, second puberty type of shit. The brain fog, the constant thinking about them, the whole package. If this happened to me five years ago, I would've been a complete disaster. Anxious when they take too long to reply. "Did I say something wrong?" Playing conversations in my head over and over. You know, classic 17-year-old boy energy.
 
-But this time, when I feel that urge to do something stupid, the pause button actually works. I notice the feeling, I understand *why* my brain is being like this (chemicals, loneliness, whatever), and then I can choose how to respond. Like an actual adult. Wild concept, I know.
+But this time, when I feel the anxiety creeping in, the pause button actually works. I notice it, I understand *why* my brain is being like this (chemicals, loneliness, whatever), and then I can choose not to spiral. Like an actual adult. Wild concept, I know.
 
-Does it make the feelings less intense? Nope. Still feels like my brain got hijacked. But at least I'm not acting like a complete idiot about it. Most of the time. (kinda)
+Does it make the feelings less intense? Nope. Still feels like my brain got hijacked. But at least I'm not drowning in my own head about it. Most of the time. (kinda)
 
-And honestly? This has been huge for me. Fewer regrettable texts. Fewer snap decisions. Fewer "why did I say that" moments at 2am when I can't sleep.
+And honestly? This has been huge for me. Fewer spirals. Fewer snap decisions. Fewer 2am moments lying awake overthinking everything.
 
 Now, I'm not saying I've got this figured out. Sometimes the primal self is faster than the metacognition. The "pause button" kicks in *after* I've already said something stupid or made a mess. Like, thanks brain, really helpful timing there lol.
 
