@@ -3,8 +3,6 @@ title: "The Pause Button I Didn't Know I Had"
 date: 2026-01-08
 ---
 
-# The Pause Button I Didn't Know I Had
-
 So here's something weird I noticed about myself recently.
 
 When I do stupid shit (and trust me, I do plenty) there used to be this direct pipeline from feeling to action. Like, zero buffer. Someone annoys me? Instant reaction. Get anxious about something? Spiral time. Feel like procrastinating? Already on YouTube, baby.
