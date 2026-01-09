@@ -11,10 +11,21 @@ const posts = defineCollection({
   }),
 });
 
+const bookSchema = z.object({
+  title: z.string(),
+  author: z.string(),
+  isbn: z.string().optional(),
+});
+
 const pages = defineCollection({
   type: 'content',
   schema: z.object({
     title: z.string(),
+    books: z.object({
+      reading: z.array(bookSchema),
+      finished: z.array(bookSchema),
+      wishlist: z.array(bookSchema),
+    }).optional(),
   }),
 });
 

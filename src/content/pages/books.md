@@ -1,32 +1,65 @@
 ---
 title: "Books"
+books:
+  reading:
+    - title: "When Things Don't Go Your Way"
+      author: "Haemin Sunim"
+      isbn: "9780143135890"
+    - title: "The Joy of X"
+      author: "Steven Strogatz"
+      isbn: "9780544105850"
+    - title: "Thinking in Bets"
+      author: "Annie Duke"
+      isbn: "9780735216372"
+    - title: "Skin in the Game"
+      author: "Nassim Nicholas Taleb"
+      isbn: "9780241300657"
+    - title: "Tanyalah Aku Sebelum Kau Kehilangan Aku"
+      author: "Fadhullah Al-Ha'iri"
+    - title: "Why Greatness Cannot Be Planned"
+      author: "Kenneth O. Stanley & Joel Lehman"
+      isbn: "9783319155234"
+    - title: "The Art of Doing Science and Engineering"
+      author: "Richard Hamming"
+      isbn: "9781732265172"
+    - title: "Zero to One"
+      author: "Peter Thiel"
+      isbn: "9780804139298"
+  finished:
+    - title: "Finish"
+      author: "Jon Acuff"
+      isbn: "9780525537526"
+    - title: "Atomic Habits"
+      author: "James Clear"
+      isbn: "9780735211292"
+    - title: "The Courage to Be Happy"
+      author: "Ichiro Kishimi & Fumitake Koga"
+      isbn: "9781982123000"
+    - title: "The Courage to Be Disliked"
+      author: "Ichiro Kishimi & Fumitake Koga"
+      isbn: "9781501197277"
+    - title: "You Can Just Do Things"
+      author: "Jay Yang"
+    - title: "The Millionaire Fastlane"
+      author: "MJ DeMarco"
+      isbn: "9780984358106"
+  wishlist:
+    - title: "The Beginning of Infinity"
+      author: "David Deutsch"
+      isbn: "9780143121350"
+    - title: "Tiny Experiments"
+      author: "Anne-Laure Le Cunff"
+      isbn: "9780593715130"
+    - title: "The Art of Thinking Clearly"
+      author: "Rolf Dobelli"
+      isbn: "9780062219695"
+    - title: "Wealth of Nations"
+      author: "Adam Smith"
+      isbn: "9780553585971"
+    - title: "Buy Back Your Time"
+      author: "Dan Martell"
+      isbn: "9780593422977"
+    - title: "The 48 Laws of Power"
+      author: "Robert Greene"
+      isbn: "9780140280197"
 ---
-
-## Currently Reading
-
-- **When Things Don't Go Your Way** by Haemin Sunim
-- **The Joy of X** by Steven Strogatz
-- **Thinking in Bets** by Annie Duke
-- **Skin in the Game** by Nassim Nicholas Taleb
-- **Tanyalah Aku Sebelum Kau Kehilangan Aku** by Fadhullah Al-Ha'iri
-- **Why Greatness Cannot Be Planned** by Kenneth O. Stanley & Joel Lehman
-- **The Art of Doing Science and Engineering** by Richard Hamming
-- **Zero to One** by Peter Thiel
-
-## Finished
-
-- **Finish** by Jon Acuff
-- **Atomic Habits** by James Clear
-- **The Courage to Be Happy** by Ichiro Kishimi & Fumitake Koga
-- **The Courage to Be Disliked** by Ichiro Kishimi & Fumitake Koga
-- **You Can Just Do Things** by Jay Yang
-- **The Millionaire Fastlane** by MJ DeMarco
-
-## Want to Read
-
-- **The Beginning of Infinity** by David Deutsch
-- **Tiny Experiments** by Anne-Laure Le Cunff
-- **The Art of Thinking Clearly** by Rolf Dobelli
-- **Wealth of Nations** by Adam Smith
-- **Buy Back Your Time** by Dan Martell
-- **The 48 Laws of Power** by Robert Greene

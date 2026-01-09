@@ -1,0 +1,81 @@
+---
+import Base from '../layouts/Base.astro';
+import BookCard from '../components/BookCard.astro';
+import { getEntry } from 'astro:content';
+
+const booksPage = await getEntry('pages', 'books');
+const { books } = booksPage.data;
+---
+
+<Base title="Books">
+  <h1>Books</h1>
+
+  {books.reading.length > 0 && (
+    <section class="book-section">
+      <h2>Currently Reading</h2>
+      <div class="book-grid">
+        {books.reading.map((book) => (
+          <BookCard
+            title={book.title}
+            author={book.author}
+            isbn={book.isbn}
+          />
+        ))}
+      </div>
+    </section>
+  )}
+
+  {books.finished.length > 0 && (
+    <section class="book-section">
+      <h2>Finished</h2>
+      <div class="book-grid">
+        {books.finished.map((book) => (
+          <BookCard
+            title={book.title}
+            author={book.author}
+            isbn={book.isbn}
+          />
+        ))}
+      </div>
+    </section>
+  )}
+
+  {books.wishlist.length > 0 && (
+    <section class="book-section">
+      <h2>Want to Read</h2>
+      <div class="book-grid">
+        {books.wishlist.map((book) => (
+          <BookCard
+            title={book.title}
+            author={book.author}
+            isbn={book.isbn}
+          />
+        ))}
+      </div>
+    </section>
+  )}
+</Base>
+
+<style>
+  .book-section {
+    margin-bottom: 3rem;
+  }
+
+  .book-section h2 {
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+  }
+
+  .book-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 1.5rem;
+  }
+
+  @media (max-width: 640px) {
+    .book-grid {
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 1rem;
+    }
+  }
+</style>
