@@ -1,17 +1,15 @@
 ---
 import Post from '../layouts/Post.astro';
-import { getSortedPosts, getSlug, readingTime, getExcerpt } from '../utils';
+import { getSortedPosts, getCategory, readingTime, getExcerpt } from '../utils';
 
 export async function getStaticPaths() {
   const posts = await getSortedPosts();
   return posts.map((post, index) => {
-    const [category, ...slugParts] = post.slug.split('/');
-    const slug = slugParts.join('/');
     return {
-      params: { slug },
+      params: { slug: post.slug },
       props: {
         post,
-        category,
+        category: getCategory(post.slug),
         prevPost: posts[index + 1] || null,
         nextPost: posts[index - 1] || null,
       },

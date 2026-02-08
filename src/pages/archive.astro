@@ -1,13 +1,13 @@
 ---
 import Base from '../layouts/Base.astro';
-import { formatDate, getSlug, getSortedPosts } from '../utils';
+import { formatDate, getSlug, getCategory, getSortedPosts } from '../utils';
 
 const posts = await getSortedPosts();
 
 // Group posts by category
 const grouped = new Map<string, typeof posts>();
 for (const post of posts) {
-  const category = post.slug.split('/')[0];
+  const category = getCategory(post.slug);
   if (!grouped.has(category)) {
     grouped.set(category, []);
   }

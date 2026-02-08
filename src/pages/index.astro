@@ -1,6 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
-import { formatDate, getSlug, getSortedPosts } from '../utils';
+import { formatDate, getSlug, getCategory, getSortedPosts } from '../utils';
 import { siteConfig } from '../../site.config';
 
 const sortedPosts = await getSortedPosts();
@@ -16,7 +16,7 @@ const paginatedPosts = sortedPosts.slice(0, siteConfig.postsPerPage);
   ) : (
     <ul class="post-list">
       {paginatedPosts.map((post) => {
-        const category = post.slug.split('/')[0];
+        const category = getCategory(post.slug);
         return (
           <li>
             <span class="post-title">
