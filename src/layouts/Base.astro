@@ -18,10 +18,9 @@ const { title, description } = Astro.props;
     <header>
       <a href="/" class="site-title">{siteConfig.title}</a>
       <nav>
-        <a href="/toc">Index</a>
+        <a href="/archive">Archive</a>
         <a href="/books">Books</a>
         <a href="/projects">Projects</a>
-        <a href="/research">Research</a>
         <a href="/about">About</a>
       </nav>
     </header>
@@ -29,7 +28,12 @@ const { title, description } = Astro.props;
       <slot />
     </main>
     <footer>
-      &copy; {new Date().getFullYear()} {siteConfig.footer}
+      <nav class="footer-nav">
+        <a href="/archive">Archive</a>
+        <a href="/books">Books</a>
+        <a href="/about">About</a>
+      </nav>
+      <span>&copy; {new Date().getFullYear()} {siteConfig.footer} · <a href="/rss.xml">RSS</a></span>
     </footer>
   </body>
 </html>

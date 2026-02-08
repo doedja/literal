@@ -1,15 +1,19 @@
 ---
 import Base from './Base.astro';
 import type { CollectionEntry } from 'astro:content';
-import { formatDate } from '../utils';
+import { formatDate, getSlug } from '../utils';
 
 interface Props {
   post: CollectionEntry<'posts'>;
   category: string;
+  readingTime?: string;
+  description?: string;
+  prevPost?: CollectionEntry<'posts'> | null;
+  nextPost?: CollectionEntry<'posts'> | null;
 }
 
-const { post, category } = Astro.props;
-const { title, description, date } = post.data;
+const { post, category, readingTime, description, prevPost, nextPost } = Astro.props;
+const { title, date, updated } = post.data;
 ---
 
 <Base title={title} description={description}>
@@ -20,6 +24,15 @@ const { title, description, date } = post.data;
         <span class="category">{category}</span>
         <span class="sep">·</span>
         <time datetime={date.toISOString()}>{formatDate(date)}</time>
+        {readingTime && (
+          <>
+            <span class="sep">·</span>
+            <span>{readingTime}</span>
+          </>
+        )}
+        {updated && (
+          <span class="updated">Updated {formatDate(updated)}</span>
+        )}
       </div>
     </header>
 
@@ -27,11 +40,30 @@ const { title, description, date } = post.data;
       <slot />
     </div>
   </article>
+
+  {(prevPost || nextPost) && (
+    <nav class="post-nav">
+      {prevPost ? (
+        <a href={`/${getSlug(prevPost.slug)}`} class="post-nav-link prev">
+          <span class="post-nav-label">&larr; Previous</span>
+          <span class="post-nav-title">{prevPost.data.title}</span>
+        </a>
+      ) : <span />}
+      {nextPost ? (
+        <a href={`/${getSlug(nextPost.slug)}`} class="post-nav-link next">
+          <span class="post-nav-label">Next &rarr;</span>
+          <span class="post-nav-title">{nextPost.data.title}</span>
+        </a>
+      ) : <span />}
+    </nav>
+  )}
 </Base>
 
 <style>
   .post-header {
-    margin-bottom: 3rem;
+    margin-bottom: 2.5rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
   }
 
   .post-header h1 {
@@ -44,14 +76,77 @@ const { title, description, date } = post.data;
   }
 
   .category {
-    color: var(--muted);
+    font-family: 'Libre Franklin', sans-serif;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+    color: var(--accent);
   }
 
   .sep {
     margin: 0 0.4rem;
   }
 
+  .updated {
+    font-family: 'Libre Franklin', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-left: 0.4rem;
+  }
+
   .post-content {
     line-height: 1.7;
+  }
+
+  .post-content > :global(p:first-child::first-letter) {
+    font-size: 3.2em;
+    float: left;
+    line-height: 0.8;
+    margin-right: 0.08em;
+    margin-top: 0.05em;
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  .post-nav {
+    display: flex;
+    justify-content: space-between;
+    gap: 2rem;
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+    font-family: 'Libre Franklin', sans-serif;
+  }
+
+  .post-nav-link {
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    max-width: 45%;
+  }
+
+  .post-nav-link.next {
+    margin-left: auto;
+    text-align: right;
+  }
+
+  .post-nav-label {
+    font-size: 0.75rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .post-nav-title {
+    font-size: 0.9rem;
+    color: var(--accent);
+  }
+
+  .post-nav-link:hover .post-nav-title {
+    color: var(--accent-hover);
   }
 </style>

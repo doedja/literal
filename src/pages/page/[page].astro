@@ -1,29 +1,24 @@
 ---
 import Base from '../../layouts/Base.astro';
-import { getCollection } from 'astro:content';
-import { formatDate, getSlug } from '../../utils';
+import { formatDate, getSlug, getSortedPosts } from '../../utils';
+import { siteConfig } from '../../../site.config';
 
 export async function getStaticPaths() {
-  const POSTS_PER_PAGE = 10;
-  const posts = await getCollection('posts', ({ data }) => !data.draft);
-  const totalPages = Math.ceil(posts.length / POSTS_PER_PAGE);
+  const posts = await getSortedPosts();
+  const totalPages = Math.ceil(posts.length / siteConfig.postsPerPage);
 
-  // Generate pages 2, 3, 4... (page 1 is index.astro)
   return Array.from({ length: totalPages - 1 }, (_, i) => ({
     params: { page: String(i + 2) },
   }));
 }
 
-const POSTS_PER_PAGE = 10;
 const { page } = Astro.params;
 const currentPage = parseInt(page);
 
-const posts = await getCollection('posts', ({ data }) => !data.draft);
-const sortedPosts = posts.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
-
-const totalPages = Math.ceil(sortedPosts.length / POSTS_PER_PAGE);
-const start = (currentPage - 1) * POSTS_PER_PAGE;
-const paginatedPosts = sortedPosts.slice(start, start + POSTS_PER_PAGE);
+const sortedPosts = await getSortedPosts();
+const totalPages = Math.ceil(sortedPosts.length / siteConfig.postsPerPage);
+const start = (currentPage - 1) * siteConfig.postsPerPage;
+const paginatedPosts = sortedPosts.slice(start, start + siteConfig.postsPerPage);
 
 const prevPage = currentPage > 2 ? `/page/${currentPage - 1}` : '/';
 const nextPage = currentPage < totalPages ? `/page/${currentPage + 1}` : null;
@@ -32,12 +27,19 @@ const nextPage = currentPage < totalPages ? `/page/${currentPage + 1}` : null;
 <Base title={`Page ${currentPage}`}>
   <h1>Recent</h1>
   <ul class="post-list">
-    {paginatedPosts.map((post) => (
-      <li>
-        <a href={`/${getSlug(post.slug)}`}>{post.data.title}</a>{post.data.updated && <sup class="updated">(updated)</sup>}
-        <time datetime={post.data.date.toISOString()}>{formatDate(post.data.date)}</time>
-      </li>
-    ))}
+    {paginatedPosts.map((post) => {
+      const category = post.slug.split('/')[0];
+      return (
+        <li>
+          <a href={`/${getSlug(post.slug)}`}>{post.data.title}</a>
+          {post.data.updated && <span class="updated">Updated</span>}
+          <span class="post-meta">
+            <span class="cat">{category}</span>
+            <time datetime={post.data.date.toISOString()}>{formatDate(post.data.date)}</time>
+          </span>
+        </li>
+      );
+    })}
   </ul>
 
   <nav class="pagination">
@@ -70,10 +72,27 @@ const nextPage = currentPage < totalPages ? `/page/${currentPage + 1}` : null;
     justify-content: space-between;
   }
 
-  .updated {
-    font-size: 0.65rem;
+  .post-meta {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+
+  .cat {
+    font-family: 'Libre Franklin', sans-serif;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
     color: var(--muted);
-    margin-left: 0.25rem;
-    vertical-align: super;
+  }
+
+  .updated {
+    font-family: 'Libre Franklin', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-left: 0.4rem;
   }
 </style>

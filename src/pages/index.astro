@@ -1,29 +1,33 @@
 ---
 import Base from '../layouts/Base.astro';
-import { getCollection } from 'astro:content';
-import { formatDate, getSlug } from '../utils';
+import { formatDate, getSlug, getSortedPosts } from '../utils';
+import { siteConfig } from '../../site.config';
 
-const POSTS_PER_PAGE = 10;
-
-const posts = await getCollection('posts', ({ data }) => !data.draft);
-const sortedPosts = posts.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
-
-const totalPages = Math.ceil(sortedPosts.length / POSTS_PER_PAGE);
-const paginatedPosts = sortedPosts.slice(0, POSTS_PER_PAGE);
+const sortedPosts = await getSortedPosts();
+const totalPages = Math.ceil(sortedPosts.length / siteConfig.postsPerPage);
+const paginatedPosts = sortedPosts.slice(0, siteConfig.postsPerPage);
 ---
 
 <Base>
   <h1>Recent</h1>
+  <p class="tagline">{siteConfig.tagline}</p>
   {paginatedPosts.length === 0 ? (
     <p>No posts yet.</p>
   ) : (
     <ul class="post-list">
-      {paginatedPosts.map((post) => (
-        <li>
-          <a href={`/${getSlug(post.slug)}`}>{post.data.title}</a>{post.data.updated && <sup class="updated">(updated)</sup>}
-          <time datetime={post.data.date.toISOString()}>{formatDate(post.data.date)}</time>
-        </li>
-      ))}
+      {paginatedPosts.map((post) => {
+        const category = post.slug.split('/')[0];
+        return (
+          <li>
+            <a href={`/${getSlug(post.slug)}`}>{post.data.title}</a>
+            {post.data.updated && <span class="updated">Updated</span>}
+            <span class="post-meta">
+              <span class="cat">{category}</span>
+              <time datetime={post.data.date.toISOString()}>{formatDate(post.data.date)}</time>
+            </span>
+          </li>
+        );
+      })}
     </ul>
   )}
 
@@ -39,13 +43,37 @@ const paginatedPosts = sortedPosts.slice(0, POSTS_PER_PAGE);
 
 <style>
   h1 {
+    margin-bottom: 0.5rem;
+  }
+
+  .tagline {
+    color: var(--muted);
+    font-size: 0.95rem;
     margin-bottom: 2.5rem;
+    margin-top: 0;
+  }
+
+  .post-meta {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+
+  .cat {
+    font-family: 'Libre Franklin', sans-serif;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
   }
 
   .updated {
-    font-size: 0.65rem;
-    color: var(--muted);
-    margin-left: 0.25rem;
-    vertical-align: super;
+    font-family: 'Libre Franklin', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-left: 0.4rem;
   }
 </style>

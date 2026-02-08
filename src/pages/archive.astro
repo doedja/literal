@@ -1,9 +1,8 @@
 ---
 import Base from '../layouts/Base.astro';
-import { getCollection } from 'astro:content';
-import { formatDate, getSlug } from '../utils';
+import { formatDate, getSlug, getSortedPosts } from '../utils';
 
-const posts = await getCollection('posts', ({ data }) => !data.draft);
+const posts = await getSortedPosts();
 
 // Group posts by category
 const grouped = new Map<string, typeof posts>();
@@ -24,11 +23,11 @@ const categories = [...grouped.entries()]
   }));
 ---
 
-<Base title="Index">
-  <h1>Index</h1>
+<Base title="Archive">
+  <h1>Archive</h1>
   {categories.map(({ category, posts }) => (
     <section>
-      <h2>{category}</h2>
+      <h2>{category.charAt(0).toUpperCase() + category.slice(1)} <span class="count">({posts.length})</span></h2>
       <ul>
         {posts.map((post) => (
           <li>
@@ -47,7 +46,19 @@ const categories = [...grouped.entries()]
   }
 
   section {
-    margin-bottom: 2rem;
+    margin-bottom: 2.5rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  section:last-child {
+    border-bottom: none;
+  }
+
+  .count {
+    font-weight: 400;
+    color: var(--muted);
+    font-size: 0.85rem;
   }
 
   h2 {
