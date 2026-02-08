@@ -20,8 +20,7 @@ const paginatedPosts = sortedPosts.slice(0, siteConfig.postsPerPage);
         return (
           <li>
             <span class="post-title">
-              <a href={`/${getSlug(post.slug)}`}>{post.data.title}</a>
-              {post.data.updated && <span class="updated">Updated</span>}
+              <a href={`/${getSlug(post.slug)}`}>{post.data.title}{post.data.updated && <span class="updated"> (Updated)</span>}</a>
             </span>
             <span class="post-meta">
               <span class="cat">{category}</span>
@@ -77,12 +76,7 @@ const paginatedPosts = sortedPosts.slice(0, siteConfig.postsPerPage);
   }
 
   .updated {
-    font-family: 'Libre Franklin', sans-serif;
-    font-size: 0.7rem;
-    font-weight: 500;
-    color: var(--accent);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    margin-left: 0.4rem;
+    font-size: 0.85em;
+    color: var(--muted);
   }
 </style>
