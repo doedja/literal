@@ -31,8 +31,10 @@ const nextPage = currentPage < totalPages ? `/page/${currentPage + 1}` : null;
       const category = post.slug.split('/')[0];
       return (
         <li>
-          <a href={`/${getSlug(post.slug)}`}>{post.data.title}</a>
-          {post.data.updated && <span class="updated">Updated</span>}
+          <span class="post-title">
+            <a href={`/${getSlug(post.slug)}`}>{post.data.title}</a>
+            {post.data.updated && <span class="updated">Updated</span>}
+          </span>
           <span class="post-meta">
             <span class="cat">{category}</span>
             <time datetime={post.data.date.toISOString()}>{formatDate(post.data.date)}</time>
@@ -70,6 +72,13 @@ const nextPage = currentPage < totalPages ? `/page/${currentPage + 1}` : null;
 
   .pagination {
     justify-content: space-between;
+  }
+
+  .post-title {
+    flex: 1;
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
   }
 
   .post-meta {

@@ -19,8 +19,10 @@ const paginatedPosts = sortedPosts.slice(0, siteConfig.postsPerPage);
         const category = post.slug.split('/')[0];
         return (
           <li>
-            <a href={`/${getSlug(post.slug)}`}>{post.data.title}</a>
-            {post.data.updated && <span class="updated">Updated</span>}
+            <span class="post-title">
+              <a href={`/${getSlug(post.slug)}`}>{post.data.title}</a>
+              {post.data.updated && <span class="updated">Updated</span>}
+            </span>
             <span class="post-meta">
               <span class="cat">{category}</span>
               <time datetime={post.data.date.toISOString()}>{formatDate(post.data.date)}</time>
@@ -51,6 +53,13 @@ const paginatedPosts = sortedPosts.slice(0, siteConfig.postsPerPage);
     font-size: 0.95rem;
     margin-bottom: 2.5rem;
     margin-top: 0;
+  }
+
+  .post-title {
+    flex: 1;
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
   }
 
   .post-meta {
