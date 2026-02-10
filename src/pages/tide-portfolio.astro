@@ -1,0 +1,1218 @@
+---
+import Base from '../layouts/Base.astro';
+import { getEntry } from 'astro:content';
+
+const page = await getEntry('pages', 'tide-portfolio');
+const { portfolio } = page.data;
+const { holdings, changelog, cash, deposito_rate } = portfolio!;
+
+// --- Fetch current prices from Yahoo Finance ---
+type PriceMap = Record<string, number | null>;
+const prices: PriceMap = {};
+
+await Promise.all(
+  holdings.map(async (h) => {
+    const symbol = `${h.symbol}.JK`;
+    try {
+      const res = await fetch(
+        `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=1d&interval=1d`,
+        { headers: { 'User-Agent': 'Mozilla/5.0' } }
+      );
+      if (!res.ok) { prices[h.symbol] = null; return; }
+      const data = await res.json() as any;
+      prices[h.symbol] = data?.chart?.result?.[0]?.meta?.regularMarketPrice ?? null;
+    } catch {
+      prices[h.symbol] = null;
+    }
+  })
+);
+
+// --- Calculations ---
+const totalInvested = holdings.reduce((sum, h) => sum + h.shares * h.avg_price, 0);
+const currentValue = holdings.reduce((sum, h) => {
+  const price = prices[h.symbol] ?? h.avg_price;
+  return sum + h.shares * price;
+}, 0);
+const pnl = currentValue - totalInvested;
+const pnlPct = totalInvested > 0 ? (pnl / totalInvested) * 100 : 0;
+const totalCapital = cash + currentValue;
+
+// --- Fixed yield comparison ---
+// Fixed yield = if all deposited money had earned a fixed rate instead.
+// Each deposit is compounded from its deposit date to today.
+const now = new Date();
+let depositoValue = 0;
+let totalCashDeposited = 0;
+
+// Collect deposit events for chart annotations
+const depositEvents: { date: string; amount: number; label: string }[] = [];
+
+for (const entry of changelog) {
+  for (const change of entry.changes) {
+    if (change.action === 'deposit' && change.amount) {
+      totalCashDeposited += change.amount;
+      const depositDate = new Date(entry.date);
+      const yearsElapsed = (now.getTime() - depositDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
+      depositoValue += change.amount * Math.pow(1 + deposito_rate / 100, yearsElapsed);
+      depositEvents.push({
+        date: entry.date,
+        amount: change.amount,
+        label: change.amount >= 1_000_000
+          ? `+${(change.amount / 1_000_000).toFixed(0)}jt`
+          : `+${(change.amount / 1_000).toFixed(0)}rb`,
+      });
+    }
+  }
+}
+
+// --- Chart data ---
+// Build monthly points from first changelog date to today.
+// Portfolio line: between rebalances, use cost basis. At today, use market value.
+// Fixed yield line: compound each deposit at rate from its deposit date.
+const chartPoints: { date: string; portfolio: number; deposito: number }[] = [];
+
+// Collect all capital deployment events (buys use money, sells return money)
+const capitalEvents: { date: Date; amount: number }[] = [];
+const cashDepositEvents: { date: Date; amount: number }[] = [];
+
+for (const entry of changelog) {
+  for (const change of entry.changes) {
+    if (change.action === 'deposit' && change.amount) {
+      cashDepositEvents.push({ date: new Date(entry.date), amount: change.amount });
+    }
+    if (change.action === 'buy' && change.shares && change.price) {
+      capitalEvents.push({ date: new Date(entry.date), amount: change.shares * change.price });
+    }
+    if (change.action === 'sell' && change.shares && change.price) {
+      capitalEvents.push({ date: new Date(entry.date), amount: -(change.shares * change.price) });
+    }
+  }
+}
+
+// Generate monthly points
+const startDate = new Date(changelog[0]?.date ?? now);
+const cursor = new Date(startDate);
+while (cursor <= now) {
+  const cursorTime = cursor.getTime();
+
+  // Portfolio: total deposited cash up to this point (cost basis between rebalances)
+  let totalDeposited = 0;
+  for (const dep of cashDepositEvents) {
+    if (dep.date.getTime() <= cursorTime) totalDeposited += dep.amount;
+  }
+
+  // Fixed yield: compound each deposit from its date to cursor
+  let depositoVal = 0;
+  for (const dep of cashDepositEvents) {
+    if (dep.date.getTime() <= cursorTime) {
+      const years = (cursorTime - dep.date.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
+      depositoVal += dep.amount * Math.pow(1 + deposito_rate / 100, years);
+    }
+  }
+
+  chartPoints.push({
+    date: cursor.toISOString().slice(0, 10),
+    portfolio: Math.round(totalDeposited),
+    deposito: Math.round(depositoVal),
+  });
+  cursor.setMonth(cursor.getMonth() + 1);
+}
+
+// Final point: today with actual market value (portfolio) vs deposito
+chartPoints.push({
+  date: now.toISOString().slice(0, 10),
+  portfolio: Math.round(totalCapital),
+  deposito: Math.round(depositoValue),
+});
+
+// --- Format helpers ---
+const fmtIDR = (n: number) => new Intl.NumberFormat('id-ID', {
+  style: 'currency', currency: 'IDR', minimumFractionDigits: 0,
+}).format(n);
+const fmtNum = (n: number) => new Intl.NumberFormat('id-ID').format(n);
+const fmtPct = (n: number) => (n >= 0 ? '+' : '') + n.toFixed(2) + '%';
+const fmtCompact = (n: number) => {
+  if (Math.abs(n) >= 1_000_000) return (n / 1_000_000).toFixed(1) + ' jt';
+  if (Math.abs(n) >= 1_000) return (n / 1_000).toFixed(0) + ' rb';
+  return fmtNum(n);
+};
+
+const buildTime = new Date().toLocaleString('en-US', {
+  dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Jakarta',
+});
+
+const holdingsTable = holdings.map((h) => {
+  const currentPrice = prices[h.symbol] ?? h.avg_price;
+  const marketValue = h.shares * currentPrice;
+  const costBasis = h.shares * h.avg_price;
+  const holdingPnl = marketValue - costBasis;
+  const holdingPnlPct = costBasis > 0 ? (holdingPnl / costBasis) * 100 : 0;
+  const weight = currentValue > 0 ? (marketValue / currentValue) * 100 : 0;
+  return { ...h, currentPrice, marketValue, costBasis, pnl: holdingPnl, pnlPct: holdingPnlPct, weight };
+});
+
+// Group changelog by year (reverse chronological)
+const changelogByYear: Record<string, typeof changelog> = {};
+for (const entry of changelog) {
+  const year = entry.date.slice(0, 4);
+  if (!changelogByYear[year]) changelogByYear[year] = [];
+  changelogByYear[year].push(entry);
+}
+const years = Object.keys(changelogByYear).sort((a, b) => b.localeCompare(a));
+const latestYear = years[0];
+
+const holdingsJson = JSON.stringify(holdings.map((h) => ({
+  symbol: h.symbol,
+  yahooSymbol: `${h.symbol}.JK`,
+  shares: h.shares,
+  avg_price: h.avg_price,
+})));
+
+const vsDeposito = totalCapital - depositoValue;
+---
+
+<Base title="TIDE Portfolio">
+  <!-- TIDE Header -->
+  <div class="tide-header">
+    <div class="tide-brand">
+      <h1 class="tide-wordmark">TIDE</h1>
+      <span class="tide-expansion">Tracked Indonesian Diversified Equities</span>
+    </div>
+    <div class="tide-meta-row">
+      <span class="tide-strategy">Equal-weight &middot; Monthly rebalance &middot; {holdings.length} holdings</span>
+      <span class="tide-date">As of {buildTime} WIB</span>
+    </div>
+  </div>
+
+  <div class="tide-divider" aria-hidden="true">
+    <svg viewBox="0 0 600 12" preserveAspectRatio="none">
+      <path d="M0,6 Q75,0 150,6 T300,6 T450,6 T600,6" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    </svg>
+  </div>
+
+  <!-- Primary Metrics -->
+  <div class="metrics-primary">
+    <div class="metric-hero">
+      <span class="metric-label">Portfolio Value</span>
+      <span class="metric-value-large" data-field="totalCapital">{fmtIDR(totalCapital)}</span>
+      <span class={`metric-delta ${pnl >= 0 ? 'up' : 'down'}`} data-field="pnl">
+        {fmtIDR(pnl)} ({fmtPct(pnlPct)})
+      </span>
+    </div>
+    <div class="metric-secondary-grid">
+      <div class="metric-item">
+        <span class="metric-label">Total Deposited</span>
+        <span class="metric-value">{fmtIDR(totalCashDeposited)}</span>
+      </div>
+      <div class="metric-item">
+        <span class="metric-label">Cash</span>
+        <span class="metric-value" data-field="cash">{fmtIDR(cash)}</span>
+      </div>
+      <div class="metric-item">
+        <span class="metric-label">Fixed Yield ({deposito_rate}%)</span>
+        <span class="metric-value">{fmtIDR(depositoValue)}</span>
+      </div>
+      <div class="metric-item">
+        <span class="metric-label">vs Fixed Yield</span>
+        <span class={`metric-value ${vsDeposito >= 0 ? 'up' : 'down'}`} data-field="vsDeposito">
+          {vsDeposito >= 0 ? '+' : ''}{fmtCompact(vsDeposito)}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Performance Chart -->
+  <section class="section-block">
+    <div class="section-header">
+      <h2>Performance</h2>
+      <span class="section-aside">Portfolio vs {deposito_rate}% fixed yield</span>
+    </div>
+    <div class="chart-container">
+      <canvas id="perf-chart"></canvas>
+    </div>
+    <div class="chart-legend-note">
+      <span class="legend-deposit-marker">
+        <span class="legend-dash"></span>
+        <span class="legend-diamond"></span>
+        <span class="legend-dash"></span>
+      </span>
+      <span>Cash injection</span>
+    </div>
+    <noscript><p class="note">Enable JavaScript to view the interactive chart.</p></noscript>
+  </section>
+
+  <!-- Holdings -->
+  <section class="section-block">
+    <div class="section-header">
+      <h2>Holdings</h2>
+      <span class="section-aside">{holdings.length} positions</span>
+    </div>
+    <div class="table-scroll">
+      <table class="tide-table">
+        <thead>
+          <tr>
+            <th class="col-sym">Ticker</th>
+            <th class="col-name">Name</th>
+            <th class="col-num">Shares</th>
+            <th class="col-num">Avg</th>
+            <th class="col-num">Price</th>
+            <th class="col-num">Value</th>
+            <th class="col-num">P/L</th>
+            <th class="col-num col-last">Weight</th>
+          </tr>
+        </thead>
+        <tbody>
+          {holdingsTable.map((h) => (
+            <tr>
+              <td class="col-sym">
+                <span class="ticker">{h.symbol}</span>
+              </td>
+              <td class="col-name">{h.name ?? h.symbol}</td>
+              <td class="col-num">{fmtNum(h.shares)}</td>
+              <td class="col-num">{fmtNum(h.avg_price)}</td>
+              <td class="col-num" data-symbol={h.symbol} data-field="currentPrice">{fmtNum(h.currentPrice)}</td>
+              <td class="col-num" data-symbol={h.symbol} data-field="marketValue">{fmtCompact(h.marketValue)}</td>
+              <td class={`col-num ${h.pnl >= 0 ? 'up' : 'down'}`} data-symbol={h.symbol} data-field="pnl">
+                {h.pnl === 0 ? '\u2014' : `${fmtPct(h.pnlPct)}`}
+              </td>
+              <td class="col-num col-last" data-symbol={h.symbol} data-field="weight">
+                <div class="weight-bar-wrap">
+                  <div class="weight-bar" style={`width: ${h.weight}%`}></div>
+                  <span>{h.weight.toFixed(1)}%</span>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+    <p class="rebalance-note">Rebalancing sells overweight positions to buy underweight ones — no new money is added. Cash injections are separate deposits.</p>
+  </section>
+
+  <!-- Changelog grouped by year -->
+  <section class="section-block">
+    <div class="section-header">
+      <h2>Log</h2>
+      <span class="section-aside">{changelog.length} {changelog.length === 1 ? 'entry' : 'entries'}</span>
+    </div>
+
+    {years.map((year) => {
+      const entries = changelogByYear[year].slice().reverse();
+      const isLatest = year === latestYear;
+      const entryCount = entries.length;
+
+      return isLatest ? (
+        <div class="year-group">
+          <div class="year-label">{year}</div>
+          <div class="timeline">
+            {entries.map((entry, i) => (
+              <div class={`timeline-entry ${i === 0 ? 'timeline-latest' : ''}`}>
+                <div class="timeline-dot" aria-hidden="true"></div>
+                <div class="timeline-content">
+                  <div class="timeline-head">
+                    <time>{entry.date}</time>
+                    <strong>{entry.title}</strong>
+                  </div>
+                  <ul class="timeline-actions">
+                    {entry.changes.map((c) => (
+                      <li>
+                        <span class={`action-tag tag-${c.action}`}>{c.action}</span>
+                        {c.symbol && <code class="action-symbol">{c.symbol}</code>}
+                        {c.shares != null && c.price != null && (
+                          <span class="action-detail">{fmtNum(c.shares)} @ {fmtNum(c.price)} = {fmtCompact(c.shares * c.price)}</span>
+                        )}
+                        {c.amount != null && (
+                          <span class="action-detail">{fmtCompact(c.amount)}</span>
+                        )}
+                        {c.note && <span class="action-note">({c.note})</span>}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <details class="year-group">
+          <summary class="year-label">
+            {year} <span class="year-count">{entryCount} {entryCount === 1 ? 'entry' : 'entries'}</span>
+          </summary>
+          <div class="timeline">
+            {entries.map((entry) => (
+              <div class="timeline-entry">
+                <div class="timeline-dot" aria-hidden="true"></div>
+                <div class="timeline-content">
+                  <div class="timeline-head">
+                    <time>{entry.date}</time>
+                    <strong>{entry.title}</strong>
+                  </div>
+                  <ul class="timeline-actions">
+                    {entry.changes.map((c) => (
+                      <li>
+                        <span class={`action-tag tag-${c.action}`}>{c.action}</span>
+                        {c.symbol && <code class="action-symbol">{c.symbol}</code>}
+                        {c.shares != null && c.price != null && (
+                          <span class="action-detail">{fmtNum(c.shares)} @ {fmtNum(c.price)} = {fmtCompact(c.shares * c.price)}</span>
+                        )}
+                        {c.amount != null && (
+                          <span class="action-detail">{fmtCompact(c.amount)}</span>
+                        )}
+                        {c.note && <span class="action-note">({c.note})</span>}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            ))}
+          </div>
+        </details>
+      );
+    })}
+  </section>
+
+  <footer class="tide-footer">
+    <p>Prices fetched at build time from Yahoo Finance. Live updates via <code>/api/stocks</code>.</p>
+    <noscript><p>JavaScript is disabled — displaying build-time prices only.</p></noscript>
+  </footer>
+
+  <!-- Data payloads -->
+  <script type="application/json" id="holdings-data" set:html={holdingsJson} />
+  <script type="application/json" id="chart-data" set:html={JSON.stringify(chartPoints)} />
+  <script type="application/json" id="deposit-events" set:html={JSON.stringify(depositEvents)} />
+  <script type="application/json" id="cash-value" set:html={JSON.stringify(cash)} />
+  <script type="application/json" id="deposito-rate" set:html={JSON.stringify(deposito_rate)} />
+  <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+
+  <!-- Client-side hydration + chart -->
+  <script>
+    const fmtIDR = (n: number) => new Intl.NumberFormat('id-ID', {
+      style: 'currency', currency: 'IDR', minimumFractionDigits: 0,
+    }).format(n);
+    const fmtNum = (n: number) => new Intl.NumberFormat('id-ID').format(n);
+    const fmtPct = (n: number) => (n >= 0 ? '+' : '') + n.toFixed(2) + '%';
+    const fmtCompact = (n: number) => {
+      if (Math.abs(n) >= 1_000_000) return (n / 1_000_000).toFixed(1) + ' jt';
+      if (Math.abs(n) >= 1_000) return (n / 1_000).toFixed(0) + ' rb';
+      return fmtNum(n);
+    };
+
+    async function hydratePrices() {
+      const holdingsEl = document.getElementById('holdings-data');
+      if (!holdingsEl) return;
+      const holdings: { symbol: string; yahooSymbol: string; shares: number; avg_price: number }[] =
+        JSON.parse(holdingsEl.textContent || '[]');
+      const cashVal: number = JSON.parse(document.getElementById('cash-value')?.textContent || '0');
+
+      const symbols = holdings.map((h) => h.yahooSymbol).join(',');
+      try {
+        const res = await fetch(`/api/stocks?symbols=${symbols}`);
+        if (!res.ok) return;
+        const prices: Record<string, number | null> = await res.json();
+
+        let totalCurrentValue = 0;
+        let totalInvested = 0;
+
+        for (const h of holdings) {
+          const price = prices[h.yahooSymbol];
+          if (price == null) continue;
+
+          const marketValue = h.shares * price;
+          const costBasis = h.shares * h.avg_price;
+          const pnl = marketValue - costBasis;
+          const pnlPct = costBasis > 0 ? (pnl / costBasis) * 100 : 0;
+
+          totalCurrentValue += marketValue;
+          totalInvested += costBasis;
+
+          const update = (field: string, value: string, className?: string) => {
+            const el = document.querySelector(`[data-symbol="${h.symbol}"][data-field="${field}"]`);
+            if (el) {
+              el.textContent = value;
+              if (className !== undefined) {
+                if (el.classList.contains('col-num')) el.className = `col-num ${className}`;
+              }
+            }
+          };
+
+          update('currentPrice', fmtNum(price));
+          update('marketValue', fmtCompact(marketValue));
+          update('pnl', pnl === 0 ? '\u2014' : fmtPct(pnlPct), pnl >= 0 ? 'up' : 'down');
+        }
+
+        // Recompute weights
+        for (const h of holdings) {
+          const price = prices[h.yahooSymbol];
+          if (price == null) continue;
+          const marketValue = h.shares * price;
+          const weight = totalCurrentValue > 0 ? (marketValue / totalCurrentValue) * 100 : 0;
+          const weightEl = document.querySelector(`[data-symbol="${h.symbol}"][data-field="weight"]`);
+          if (weightEl) {
+            const bar = weightEl.querySelector('.weight-bar') as HTMLElement;
+            const span = weightEl.querySelector('span');
+            if (bar) bar.style.width = `${weight}%`;
+            if (span) span.textContent = `${weight.toFixed(1)}%`;
+          }
+        }
+
+        // Summary updates
+        const totalCapital = cashVal + totalCurrentValue;
+        const pnl = totalCurrentValue - totalInvested;
+        const pnlPctTotal = totalInvested > 0 ? (pnl / totalInvested) * 100 : 0;
+
+        const capEl = document.querySelector('[data-field="totalCapital"]');
+        if (capEl) capEl.textContent = fmtIDR(totalCapital);
+
+        const pnlEl = document.querySelector('[data-field="pnl"]');
+        if (pnlEl) {
+          pnlEl.textContent = `${fmtIDR(pnl)} (${fmtPct(pnlPctTotal)})`;
+          pnlEl.className = `metric-delta ${pnl >= 0 ? 'up' : 'down'}`;
+        }
+      } catch {
+        // Silently fail — build-time prices remain
+      }
+    }
+
+    // Custom Chart.js plugin for deposit markers (vertical dashed lines)
+    const depositMarkerPlugin = {
+      id: 'depositMarkers',
+      afterDraw(chart: any) {
+        const depositsEl = document.getElementById('deposit-events');
+        if (!depositsEl) return;
+        const deposits: { date: string; amount: number; label: string }[] =
+          JSON.parse(depositsEl.textContent || '[]');
+        if (!deposits.length) return;
+
+        const { ctx, scales: { x, y } } = chart;
+        const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const markerColor = isDark ? 'rgba(90,155,170,0.5)' : 'rgba(42,127,143,0.4)';
+        const labelColor = isDark ? '#5a9baa' : '#2a7f8f';
+        const labels = chart.data.labels as string[];
+
+        for (const dep of deposits) {
+          // Find closest label index
+          let idx = labels.indexOf(dep.date);
+          if (idx === -1) {
+            // Find nearest date
+            idx = labels.findIndex((l: string) => l >= dep.date);
+            if (idx === -1) idx = labels.length - 1;
+          }
+
+          const xPos = x.getPixelForValue(idx);
+          const yTop = y.top;
+          const yBottom = y.bottom;
+
+          // Draw dashed vertical line
+          ctx.save();
+          ctx.beginPath();
+          ctx.setLineDash([3, 3]);
+          ctx.strokeStyle = markerColor;
+          ctx.lineWidth = 1;
+          ctx.moveTo(xPos, yTop);
+          ctx.lineTo(xPos, yBottom);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Draw label at top
+          ctx.font = "600 9px 'Libre Franklin', sans-serif";
+          ctx.fillStyle = labelColor;
+          ctx.textAlign = 'center';
+          ctx.fillText(dep.label, xPos, yTop - 4);
+
+          // Small diamond marker
+          ctx.beginPath();
+          ctx.fillStyle = labelColor;
+          const dSize = 3;
+          ctx.moveTo(xPos, yTop + 2);
+          ctx.lineTo(xPos + dSize, yTop + 2 + dSize);
+          ctx.lineTo(xPos, yTop + 2 + dSize * 2);
+          ctx.lineTo(xPos - dSize, yTop + 2 + dSize);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.restore();
+        }
+      }
+    };
+
+    function initChart() {
+      const chartDataEl = document.getElementById('chart-data');
+      if (!chartDataEl) return;
+      const data: { date: string; portfolio: number; deposito: number }[] =
+        JSON.parse(chartDataEl.textContent || '[]');
+      const depRate: number = JSON.parse(document.getElementById('deposito-rate')?.textContent || '5');
+
+      const canvas = document.getElementById('perf-chart') as HTMLCanvasElement | null;
+      if (!canvas) return;
+
+      const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)';
+      const textColor = isDark ? '#918b84' : '#7a756f';
+      const tideColor = isDark ? '#5a9baa' : '#2a7f8f';
+
+      // @ts-ignore
+      new Chart(canvas, {
+        type: 'line',
+        plugins: [depositMarkerPlugin],
+        data: {
+          labels: data.map((d) => d.date),
+          datasets: [
+            {
+              label: 'TIDE Portfolio',
+              data: data.map((d) => d.portfolio),
+              borderColor: tideColor,
+              backgroundColor: isDark ? 'rgba(90,155,170,0.08)' : 'rgba(42,127,143,0.06)',
+              fill: true,
+              tension: 0.4,
+              pointRadius: 4,
+              pointHoverRadius: 6,
+              pointBackgroundColor: tideColor,
+              borderWidth: 2,
+            },
+            {
+              label: `Fixed Yield (${depRate}%)`,
+              data: data.map((d) => d.deposito),
+              borderColor: isDark ? '#555' : '#bbb',
+              borderDash: [4, 4],
+              fill: false,
+              tension: 0.4,
+              pointRadius: 2,
+              pointHoverRadius: 4,
+              borderWidth: 1.5,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          layout: { padding: { top: 18 } },
+          interaction: { intersect: false, mode: 'index' },
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                color: textColor,
+                font: { family: "'Libre Franklin', sans-serif", size: 11 },
+                padding: 20,
+                usePointStyle: true,
+                pointStyleWidth: 10,
+              },
+            },
+            tooltip: {
+              backgroundColor: isDark ? '#2a2928' : '#fff',
+              titleColor: isDark ? '#d4d0cb' : '#2c2c2c',
+              bodyColor: isDark ? '#918b84' : '#7a756f',
+              borderColor: isDark ? '#333130' : '#e8e6e3',
+              borderWidth: 1,
+              cornerRadius: 4,
+              padding: 10,
+              titleFont: { family: "'Libre Franklin', sans-serif", weight: '600', size: 12 },
+              bodyFont: { family: "'Libre Franklin', sans-serif", size: 11 },
+              callbacks: {
+                label: (ctx: any) => ` ${ctx.dataset.label}: ${new Intl.NumberFormat('id-ID', {
+                  style: 'currency', currency: 'IDR', minimumFractionDigits: 0,
+                }).format(ctx.raw)}`,
+              },
+            },
+          },
+          scales: {
+            x: {
+              border: { color: isDark ? '#333130' : '#e8e6e3' },
+              grid: { display: false },
+              ticks: { color: textColor, font: { family: "'Libre Franklin', sans-serif", size: 10 } },
+            },
+            y: {
+              border: { display: false },
+              grid: { color: gridColor },
+              ticks: {
+                color: textColor,
+                font: { family: "'Libre Franklin', sans-serif", size: 10 },
+                callback: (val: any) => (val / 1_000_000).toFixed(0) + ' jt',
+              },
+            },
+          },
+        },
+      });
+    }
+
+    function onReady() {
+      hydratePrices();
+      const waitForChart = setInterval(() => {
+        // @ts-ignore
+        if (typeof Chart !== 'undefined') {
+          clearInterval(waitForChart);
+          initChart();
+        }
+      }, 100);
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', onReady);
+    } else {
+      onReady();
+    }
+  </script>
+</Base>
+
+<style>
+  /* ===== TIDE Header ===== */
+  .tide-header {
+    margin-bottom: 0;
+  }
+
+  .tide-brand {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .tide-wordmark {
+    font-family: 'Libre Franklin', sans-serif;
+    font-size: 1.8rem;
+    font-weight: 700;
+    letter-spacing: 0.25em;
+    color: var(--text);
+    margin: 0;
+    line-height: 1;
+  }
+
+  .tide-expansion {
+    font-family: 'Libre Franklin', sans-serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    position: relative;
+    top: -0.05em;
+  }
+
+  .tide-meta-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-top: 0.5rem;
+    font-family: 'Libre Franklin', sans-serif;
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+
+  .tide-strategy {
+    letter-spacing: 0.02em;
+  }
+
+  .tide-date {
+    font-variant-numeric: tabular-nums;
+    opacity: 0.7;
+  }
+
+  /* ===== Wave Divider ===== */
+  .tide-divider {
+    margin: 1.25rem 0 1.75rem;
+    color: var(--border);
+    line-height: 0;
+  }
+
+  .tide-divider svg {
+    width: 100%;
+    height: 12px;
+  }
+
+  /* ===== Primary Metrics ===== */
+  .metrics-primary {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 2.5rem;
+  }
+
+  .metric-hero {
+    background: var(--bg);
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.2rem;
+  }
+
+  .metric-value-large {
+    font-family: 'Libre Franklin', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+    color: var(--text);
+    line-height: 1.2;
+  }
+
+  .metric-delta {
+    font-family: 'Libre Franklin', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .metric-secondary-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+  }
+
+  .metric-item {
+    background: var(--bg);
+    padding: 0.75rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+
+  .metric-label {
+    font-family: 'Libre Franklin', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .metric-value {
+    font-family: 'Libre Franklin', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+  }
+
+  .up { color: #2a7f5f; }
+  .down { color: #b5513c; }
+
+  /* ===== Sections ===== */
+  .section-block {
+    margin-bottom: 2.5rem;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-header h2 {
+    font-family: 'Libre Franklin', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin: 0;
+    color: var(--text);
+  }
+
+  .section-aside {
+    font-family: 'Libre Franklin', sans-serif;
+    font-size: 0.72rem;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+  }
+
+  /* ===== Chart ===== */
+  .chart-container {
+    position: relative;
+    height: 300px;
+    margin-top: 0.5rem;
+  }
+
+  .chart-legend-note {
+    font-family: 'Libre Franklin', sans-serif;
+    font-size: 0.68rem;
+    color: var(--muted);
+    margin-top: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .legend-deposit-marker {
+    display: inline-flex;
+    align-items: center;
+    gap: 0;
+    height: 14px;
+  }
+
+  .legend-dash {
+    width: 8px;
+    height: 0;
+    border-top: 1.5px dashed #2a7f8f;
+  }
+
+  .legend-diamond {
+    width: 6px;
+    height: 6px;
+    background: #2a7f8f;
+    transform: rotate(45deg);
+    flex-shrink: 0;
+  }
+
+  /* ===== Holdings Table ===== */
+  .table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 -1.5rem;
+    padding: 0 1.5rem;
+  }
+
+  .tide-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Libre Franklin', sans-serif;
+    font-size: 0.8rem;
+    margin: 0;
+    white-space: nowrap;
+  }
+
+  .tide-table thead th {
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 0.6rem 0.65rem;
+    border: none;
+    border-bottom: 2px solid var(--border);
+    background: transparent;
+  }
+
+  .tide-table tbody td {
+    padding: 0.55rem 0.65rem;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    vertical-align: middle;
+  }
+
+  .tide-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  .tide-table tbody tr:hover td {
+    background: var(--code-bg);
+  }
+
+  .col-num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .col-name {
+    color: var(--muted);
+    font-size: 0.75rem;
+  }
+
+  .col-last {
+    padding-right: 0.25rem;
+  }
+
+  .ticker {
+    font-weight: 700;
+    font-size: 0.82rem;
+    letter-spacing: 0.03em;
+  }
+
+  .rebalance-note {
+    font-family: 'Libre Franklin', sans-serif;
+    font-size: 0.72rem;
+    color: var(--muted);
+    font-style: italic;
+    margin-top: 0.75rem;
+    margin-bottom: 0;
+    line-height: 1.5;
+  }
+
+  /* Weight bar */
+  .weight-bar-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    justify-content: flex-end;
+    min-width: 5rem;
+  }
+
+  .weight-bar {
+    height: 4px;
+    background: var(--accent);
+    border-radius: 2px;
+    opacity: 0.5;
+    transition: width 0.3s ease;
+    flex-shrink: 0;
+    max-width: 3rem;
+  }
+
+  .weight-bar-wrap span {
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+    min-width: 2.5em;
+    text-align: right;
+  }
+
+  /* ===== Year groups ===== */
+  .year-group {
+    margin-bottom: 1.5rem;
+  }
+
+  .year-group:last-child {
+    margin-bottom: 0;
+  }
+
+  .year-label {
+    font-family: 'Libre Franklin', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.75rem;
+    cursor: default;
+  }
+
+  details.year-group > summary.year-label {
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+
+  details.year-group > summary.year-label::-webkit-details-marker {
+    display: none;
+  }
+
+  details.year-group > summary.year-label::before {
+    content: '\25B8';
+    font-size: 0.7rem;
+    transition: transform 0.15s ease;
+    display: inline-block;
+  }
+
+  details[open].year-group > summary.year-label::before {
+    transform: rotate(90deg);
+  }
+
+  .year-count {
+    font-weight: 400;
+    font-size: 0.68rem;
+    color: var(--muted);
+    opacity: 0.7;
+  }
+
+  /* ===== Timeline / Changelog ===== */
+  .timeline {
+    position: relative;
+    padding-left: 1.5rem;
+  }
+
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 0.3rem;
+    top: 0.5rem;
+    bottom: 0.5rem;
+    width: 1px;
+    background: var(--border);
+  }
+
+  .timeline-entry {
+    position: relative;
+    padding-bottom: 1.5rem;
+  }
+
+  .timeline-entry:last-child {
+    padding-bottom: 0;
+  }
+
+  .timeline-dot {
+    position: absolute;
+    left: -1.2rem;
+    top: 0.45rem;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--muted);
+    border: 2px solid var(--bg);
+    box-shadow: 0 0 0 1px var(--border);
+  }
+
+  .timeline-latest .timeline-dot {
+    background: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent);
+  }
+
+  .timeline-head {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .timeline-head time {
+    font-family: 'Libre Franklin', sans-serif;
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+
+  .timeline-head strong {
+    font-family: 'Libre Franklin', sans-serif;
+    font-size: 0.85rem;
+  }
+
+  .timeline-actions {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .timeline-actions li {
+    display: flex;
+    align-items: baseline;
+    gap: 0.45rem;
+    font-family: 'Libre Franklin', sans-serif;
+    font-size: 0.8rem;
+    margin: 0;
+    flex-wrap: wrap;
+    line-height: 1.5;
+  }
+
+  .action-tag {
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0.15em 0.45em;
+    border-radius: 2px;
+    flex-shrink: 0;
+    line-height: 1.6;
+  }
+
+  .tag-buy { background: #2a7f5f18; color: #2a7f5f; }
+  .tag-sell { background: #b5513c18; color: #b5513c; }
+  .tag-deposit { background: #2a7f8f18; color: #2a7f8f; }
+  .tag-rebalance { background: #7a5f2318; color: #7a5f23; }
+
+  .action-symbol {
+    font-family: 'Libre Franklin', sans-serif;
+    font-weight: 700;
+    font-size: 0.78rem;
+    background: var(--code-bg);
+    padding: 0.1em 0.35em;
+    border-radius: 2px;
+    letter-spacing: 0.03em;
+    color: var(--text);
+  }
+
+  .action-detail {
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+  }
+
+  .action-note {
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-style: italic;
+  }
+
+  /* ===== Footer ===== */
+  .tide-footer {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    font-family: 'Libre Franklin', sans-serif;
+    font-size: 0.72rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .tide-footer p {
+    margin: 0.25rem 0;
+  }
+
+  .tide-footer code {
+    font-size: 0.68rem;
+  }
+
+  .note {
+    color: var(--muted);
+    font-style: italic;
+    font-size: 0.85rem;
+  }
+
+  /* ===== Mobile ===== */
+  @media (max-width: 640px) {
+    .tide-wordmark {
+      font-size: 1.5rem;
+    }
+
+    .tide-expansion {
+      font-size: 0.6rem;
+    }
+
+    .tide-meta-row {
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+
+    .metrics-primary {
+      grid-template-columns: 1fr;
+    }
+
+    .metric-value-large {
+      font-size: 1.3rem;
+    }
+
+    .table-scroll {
+      margin: 0 -1rem;
+      padding: 0 1rem;
+    }
+
+    .chart-container {
+      height: 220px;
+    }
+
+    .timeline {
+      padding-left: 1.25rem;
+    }
+  }
+
+  /* ===== Dark Mode ===== */
+  @media (prefers-color-scheme: dark) {
+    .up { color: #5aba8a; }
+    .down { color: #d47b6b; }
+
+    .tag-buy { background: #5aba8a18; color: #5aba8a; }
+    .tag-sell { background: #d47b6b18; color: #d47b6b; }
+    .tag-deposit { background: #5a9baa18; color: #5a9baa; }
+    .tag-rebalance { background: #c9956b18; color: #c9956b; }
+
+    .legend-dash {
+      border-top-color: #5a9baa;
+    }
+
+    .legend-diamond {
+      background: #5a9baa;
+    }
+
+    .timeline-latest .timeline-dot {
+      box-shadow: 0 0 0 1px var(--accent);
+    }
+  }
+</style>
