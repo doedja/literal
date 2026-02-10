@@ -4,7 +4,49 @@ import { getEntry } from 'astro:content';
 
 const page = await getEntry('pages', 'tide-portfolio');
 const { portfolio } = page.data;
-const { holdings, changelog, cash, deposito_rate } = portfolio!;
+const { changelog, deposito_rate } = portfolio!;
+
+// --- Replay changelog to derive holdings and cash ---
+type Holding = { symbol: string; name: string; shares: number; avg_price: number };
+const holdingsMap = new Map<string, Holding>();
+let cash = 0;
+
+for (const entry of changelog) {
+  for (const change of entry.changes) {
+    if (change.action === 'deposit' && change.amount) {
+      cash += change.amount;
+    }
+    if (change.action === 'buy' && change.symbol && change.shares && change.price) {
+      const existing = holdingsMap.get(change.symbol);
+      if (existing) {
+        const totalShares = existing.shares + change.shares;
+        existing.avg_price = Math.round(
+          (existing.shares * existing.avg_price + change.shares * change.price) / totalShares
+        );
+        existing.shares = totalShares;
+        if (change.name) existing.name = change.name;
+      } else {
+        holdingsMap.set(change.symbol, {
+          symbol: change.symbol,
+          name: change.name ?? change.symbol,
+          shares: change.shares,
+          avg_price: change.price,
+        });
+      }
+      cash -= change.shares * change.price;
+    }
+    if (change.action === 'sell' && change.symbol && change.shares && change.price) {
+      const existing = holdingsMap.get(change.symbol);
+      if (existing) {
+        existing.shares -= change.shares;
+        if (existing.shares <= 0) holdingsMap.delete(change.symbol);
+      }
+      cash += change.shares * change.price;
+    }
+  }
+}
+
+const holdings = Array.from(holdingsMap.values());
 
 // --- Fetch current prices from Yahoo Finance ---
 type PriceMap = Record<string, number | null>;
@@ -38,21 +80,18 @@ const pnlPct = totalInvested > 0 ? (pnl / totalInvested) * 100 : 0;
 const totalCapital = cash + currentValue;
 
 // --- Fixed yield comparison ---
-// Fixed yield = if all deposited money had earned a fixed rate instead.
-// Each deposit is compounded from its deposit date to today.
 const now = new Date();
 let depositoValue = 0;
 let totalCashDeposited = 0;
-
-// Collect deposit events for chart annotations
 const depositEvents: { date: string; amount: number; label: string }[] = [];
+const cashDepositEvents: { date: Date; amount: number }[] = [];
 
 for (const entry of changelog) {
   for (const change of entry.changes) {
     if (change.action === 'deposit' && change.amount) {
       totalCashDeposited += change.amount;
-      const depositDate = new Date(entry.date);
-      const yearsElapsed = (now.getTime() - depositDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
+      cashDepositEvents.push({ date: new Date(entry.date), amount: change.amount });
+      const yearsElapsed = (now.getTime() - new Date(entry.date).getTime()) / (365.25 * 24 * 60 * 60 * 1000);
       depositoValue += change.amount * Math.pow(1 + deposito_rate / 100, yearsElapsed);
       depositEvents.push({
         date: entry.date,
@@ -66,64 +105,39 @@ for (const entry of changelog) {
 }
 
 // --- Chart data ---
-// Build monthly points from first changelog date to today.
-// Portfolio line: between rebalances, use cost basis. At today, use market value.
-// Fixed yield line: compound each deposit at rate from its deposit date.
+// Portfolio line uses recorded `value` from each changelog entry.
+// Fixed yield line compounds each deposit at rate from its deposit date.
+// Final point uses live market value for portfolio.
 const chartPoints: { date: string; portfolio: number; deposito: number }[] = [];
 
-// Collect all capital deployment events (buys use money, sells return money)
-const capitalEvents: { date: Date; amount: number }[] = [];
-const cashDepositEvents: { date: Date; amount: number }[] = [];
-
 for (const entry of changelog) {
-  for (const change of entry.changes) {
-    if (change.action === 'deposit' && change.amount) {
-      cashDepositEvents.push({ date: new Date(entry.date), amount: change.amount });
-    }
-    if (change.action === 'buy' && change.shares && change.price) {
-      capitalEvents.push({ date: new Date(entry.date), amount: change.shares * change.price });
-    }
-    if (change.action === 'sell' && change.shares && change.price) {
-      capitalEvents.push({ date: new Date(entry.date), amount: -(change.shares * change.price) });
-    }
-  }
-}
-
-// Generate monthly points
-const startDate = new Date(changelog[0]?.date ?? now);
-const cursor = new Date(startDate);
-while (cursor <= now) {
-  const cursorTime = cursor.getTime();
-
-  // Portfolio: total deposited cash up to this point (cost basis between rebalances)
-  let totalDeposited = 0;
-  for (const dep of cashDepositEvents) {
-    if (dep.date.getTime() <= cursorTime) totalDeposited += dep.amount;
-  }
-
-  // Fixed yield: compound each deposit from its date to cursor
+  const entryTime = new Date(entry.date).getTime();
   let depositoVal = 0;
   for (const dep of cashDepositEvents) {
-    if (dep.date.getTime() <= cursorTime) {
-      const years = (cursorTime - dep.date.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
+    if (dep.date.getTime() <= entryTime) {
+      const years = (entryTime - dep.date.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
       depositoVal += dep.amount * Math.pow(1 + deposito_rate / 100, years);
     }
   }
-
   chartPoints.push({
-    date: cursor.toISOString().slice(0, 10),
-    portfolio: Math.round(totalDeposited),
+    date: entry.date,
+    portfolio: Math.round(entry.value),
     deposito: Math.round(depositoVal),
   });
-  cursor.setMonth(cursor.getMonth() + 1);
 }
 
-// Final point: today with actual market value (portfolio) vs deposito
-chartPoints.push({
-  date: now.toISOString().slice(0, 10),
-  portfolio: Math.round(totalCapital),
-  deposito: Math.round(depositoValue),
-});
+// Final point: today with actual market value vs fixed yield
+if (changelog.length > 0) {
+  const lastDate = changelog[changelog.length - 1].date;
+  const today = now.toISOString().slice(0, 10);
+  if (today !== lastDate) {
+    chartPoints.push({
+      date: today,
+      portfolio: Math.round(totalCapital),
+      deposito: Math.round(depositoValue),
+    });
+  }
+}
 
 // --- Format helpers ---
 const fmtIDR = (n: number) => new Intl.NumberFormat('id-ID', {
