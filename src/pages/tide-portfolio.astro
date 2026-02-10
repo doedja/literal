@@ -228,6 +228,7 @@ const vsDeposito = totalCapital - depositoValue;
       <span class="section-aside">Portfolio vs {deposito_rate}% fixed yield</span>
     </div>
     <div class="chart-container">
+      <div class="chart-loading" id="chart-loading">Loading chart&hellip;</div>
       <canvas id="perf-chart"></canvas>
     </div>
     <div class="chart-legend-note">
@@ -550,6 +551,8 @@ const vsDeposito = totalCapital - depositoValue;
       const textColor = isDark ? '#918b84' : '#7a756f';
       const tideColor = isDark ? '#5a9baa' : '#2a7f8f';
 
+      document.getElementById('chart-loading')?.remove();
+
       // @ts-ignore
       new Chart(canvas, {
         type: 'line',
@@ -627,7 +630,12 @@ const vsDeposito = totalCapital - depositoValue;
               ticks: {
                 color: textColor,
                 font: { family: "'Libre Franklin', sans-serif", size: 10 },
-                callback: (val: any) => (val / 1_000_000).toFixed(0) + ' jt',
+                callback: (val: any) => {
+                  if (Math.abs(val) >= 1_000_000_000) return (val / 1_000_000_000).toFixed(1) + ' M';
+                  if (Math.abs(val) >= 1_000_000) return (val / 1_000_000).toFixed(1) + ' jt';
+                  if (Math.abs(val) >= 1_000) return (val / 1_000).toFixed(0) + ' rb';
+                  return val.toString();
+                },
               },
             },
           },
@@ -828,6 +836,18 @@ const vsDeposito = totalCapital - depositoValue;
     position: relative;
     height: 300px;
     margin-top: 0.5rem;
+  }
+
+  .chart-loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Libre Franklin', sans-serif;
+    font-size: 0.78rem;
+    color: var(--muted);
+    letter-spacing: 0.03em;
   }
 
   .chart-legend-note {
