@@ -5,7 +5,7 @@ date: 2026-02-12
 
 There's this thing called the black coffee theory that I keep thinking about. The idea is simple: imagine you walk up to a barista and you have no idea what you want, but you know for sure you don't want black coffee. "Anything but black coffee," you say. But by the time the barista gets to the machine, the only thing stuck in their head is "black coffee," and that's exactly what you get. Not because you asked for it, but because you were so fixated on the thing you didn't want that it became the only thing on the table.
 
-It's basically about how we attract what we focus on, even when we're trying to avoid it.
+The point is, if you only know what you don't want but never figure out what you actually want, you're probably gonna end up with the thing you were trying to avoid. Because that's the only thing you focused on.
 
 There's this verse in the Quran, Al-Baqarah 216, that I've known for a long time but didn't really understand until recently. It roughly translates to: "Perhaps you hate a thing and it is good for you, and perhaps you love a thing and it is bad for you. And Allah knows, while you know not."
 
